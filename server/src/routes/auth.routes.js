@@ -14,7 +14,14 @@ const {
 } = require('../controllers/auth.controller');
 
 // Public routes
-router.post('/register', registerValidator, validate, register);
+router.post('/register', (req, res) => {
+  console.log("✅ /api/auth/register route was HIT!");
+  console.log("Request Body:", req.body);
+  res.status(200).json({ 
+    success: true, 
+    message: "Route is working. Middleware bypassed." 
+  });
+});
 router.post('/login', loginValidator, validate, login);
 
 // Protected routes
