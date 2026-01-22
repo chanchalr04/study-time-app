@@ -1,118 +1,144 @@
 import React, { createContext, useState, useContext, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import api from '../services/api'   // ✅ axios instance
 
 const AuthContext = createContext({})
-
 export const useAuth = () => useContext(AuthContext)
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(() => {
+    // Initialize from localStorage
+    const storedUser = localStorage.getItem('user')
+    return storedUser ? JSON.parse(storedUser) : null
+  })
+  
+  const [token, setToken] = useState(localStorage.getItem('token'))
   const [loading, setLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(false) // For login/register loading
 
+  // ✅ Verify token and get user profile on app load
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData))
-      } catch (error) {
-        console.error('Error parsing user data:', error)
-        localStorage.removeItem('user')
+    const loadUser = async () => {
+      const storedToken = localStorage.getItem('token')
+      if (storedToken) {
+        try {
+          // Verify token by getting user profile
+          const response = await api.get('/auth/me')
+          setUser(response.user)
+          localStorage.setItem('user', JSON.stringify(response.user))
+        } catch (error) {
+          console.error('Token verification failed:', error)
+          // Clear invalid tokens
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          setUser(null)
+          setToken(null)
+        }
       }
+      setLoading(false)
     }
-    setLoading(false)
+
+    loadUser()
   }, [])
 
-  // Login function
+  // ✅ REAL LOGIN (BACKEND)
   const login = async (email, password) => {
+    setAuthLoading(true)
     try {
-      // Mock login - replace with actual API
-      const mockUser = {
-        id: '1',
-        name: email.split('@')[0],
-        email: email,
-        dailyGoal: 120,
-        totalStudyTime: 540,
-        streak: 5,
-      }
-      
-      localStorage.setItem('user', JSON.stringify(mockUser))
-      setUser(mockUser)
-      toast.success('Login successful!')
-      return { success: true, user: mockUser }
+      const response = await api.post('/auth/login', { email, password })
+      const { user, token } = response
+
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(user))
+
+      setUser(user)
+      setToken(token)
+      toast.success('Login successful')
+
+      return { success: true, data: response }
     } catch (error) {
-      toast.error('Login failed')
-      return { success: false, error: error.message }
+      const errorMessage = error.message || 'Login failed. Please check your credentials.'
+      toast.error(errorMessage)
+      return { success: false, error: errorMessage }
+    } finally {
+      setAuthLoading(false)
     }
   }
 
-  // Register function
-  const register = async (userData) => {
+  // ✅ REAL REGISTER
+  const register = async (data) => {
+    setAuthLoading(true)
     try {
-      const mockUser = {
-        id: Date.now().toString(),
-        name: userData.name,
-        email: userData.email,
-        dailyGoal: 120,
-        totalStudyTime: 0,
-        streak: 0,
-      }
-      
-      localStorage.setItem('user', JSON.stringify(mockUser))
-      setUser(mockUser)
-      toast.success('Registration successful!')
-      return { success: true, user: mockUser }
+      const response = await api.post('/auth/register', data)
+      const { user, token } = response
+
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(user))
+
+      setUser(user)
+      setToken(token)
+      toast.success('Registration successful')
+
+      return { success: true, data: response }
     } catch (error) {
-      toast.error('Registration failed')
-      return { success: false, error: error.message }
+      const errorMessage = error.message || 'Registration failed. Please try again.'
+      toast.error(errorMessage)
+      return { success: false, error: errorMessage }
+    } finally {
+      setAuthLoading(false)
     }
   }
 
-  // Logout function
-  const logout = () => {
-    localStorage.removeItem('user')
-    setUser(null)
-    toast.success('Logged out successfully!')
+  // ✅ LOGOUT
+  const logout = async () => {
+    try {
+      // Call backend logout if endpoint exists
+      await api.post('/auth/logout')
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      setUser(null)
+      setToken(null)
+      toast.success('Logged out successfully')
+    }
   }
 
-  // ✅ ADD THIS FUNCTION - Update Profile
-  const updateProfile = async (profileData) => {
-    try {
-      if (!user) {
-        throw new Error('No user logged in')
+  // ✅ UPDATE USER PROFILE
+  const updateProfile = (updatedUser) => {
+    setUser(updatedUser)
+    localStorage.setItem('user', JSON.stringify(updatedUser))
+  }
+
+  // ✅ REFRESH USER DATA
+  const refreshUser = async () => {
+    if (token) {
+      try {
+        const response = await api.get('/auth/me')
+        setUser(response.user)
+        localStorage.setItem('user', JSON.stringify(response.user))
+      } catch (error) {
+        console.error('Failed to refresh user:', error)
       }
-      
-      // Merge existing user data with new data
-      const updatedUser = {
-        ...user,
-        ...profileData,
-        updatedAt: new Date().toISOString()
-      }
-      
-      // Save to localStorage
-      localStorage.setItem('user', JSON.stringify(updatedUser))
-      
-      // Update state
-      setUser(updatedUser)
-      
-      toast.success('Profile updated successfully!')
-      return { success: true, user: updatedUser }
-    } catch (error) {
-      console.error('Update profile error:', error)
-      toast.error('Failed to update profile')
-      return { success: false, error: error.message }
     }
   }
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      login,
-      register,
-      logout,
-      updateProfile, // ✅ Make sure this is included
-      isAuthenticated: !!user,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        authLoading,
+        login,
+        register,
+        logout,
+        updateProfile,
+        refreshUser,
+        isAuthenticated: !!token && !!user,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

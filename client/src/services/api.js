@@ -1,94 +1,97 @@
-import axios from 'axios'
-
-// Use environment variable or default to localhost
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+import axios from 'axios';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   headers: {
     'Content-Type': 'application/json',
   },
-})
+  timeout: 10000, // 10 seconds timeout
+});
 
-// Request interceptor - add auth token
+// Request interceptor to add token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('token');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    return config
+    return config;
   },
   (error) => {
-    return Promise.reject(error)
+    return Promise.reject(error);
   }
-)
+);
 
-// Response interceptor - handle errors
+// Response interceptor
 api.interceptors.response.use(
-  (response) => response,
+  (response) => response.data,
   (error) => {
+    // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      // Clear local storage on 401
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       // Redirect to login page
       if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
+        window.location.href = '/login';
       }
     }
-    return Promise.reject(error)
+    
+    // Handle other errors
+    const errorMessage = error.response?.data?.message || 
+                        error.message || 
+                        'Something went wrong';
+    
+    return Promise.reject({
+      message: errorMessage,
+      status: error.response?.status,
+      data: error.response?.data
+    });
   }
-)
+);
 
-// Auth APIs
-export const register = (userData) => api.post('/auth/register', userData)
-export const login = (credentials) => api.post('/auth/login', credentials)
-export const getProfile = () => api.get('/auth/profile')
-export const updateProfile = (profileData) => api.put('/auth/profile', profileData)
+// Auth API
+export const authAPI = {
+  register: (userData) => api.post('/auth/register', userData),
+  login: (credentials) => api.post('/auth/login', credentials),
+  getProfile: () => api.get('/auth/me'),
+  logout: () => api.post('/auth/logout'),
+};
 
-// Session APIs
-export const createSession = (sessionData) => api.post('/sessions', sessionData)
-export const getSessions = (params) => api.get('/sessions', { params })
-export const getSessionStats = (params) => api.get('/sessions/stats', { params })
+// Tasks API
+export const tasksAPI = {
+  createTask: (taskData) => api.post('/tasks', taskData),
+  getTasks: (params) => api.get('/tasks', { params }),
+  getTask: (id) => api.get(`/tasks/${id}`),
+  updateTask: (id, taskData) => api.put(`/tasks/${id}`, taskData),
+  deleteTask: (id) => api.delete(`/tasks/${id}`),
+  completeTask: (id, duration) => api.put(`/tasks/${id}/complete`, { actualDuration: duration }),
+};
 
-// Task APIs
-export const getTasks = (params) => api.get('/tasks', { params })
-export const getTaskStats = () => api.get('/tasks/stats')
-export const createTask = (taskData) => api.post('/tasks', taskData)
-export const updateTask = (id, taskData) => api.put(`/tasks/${id}`, taskData)
-export const deleteTask = (id) => api.delete(`/tasks/${id}`)
+// Goals API
+export const goalsAPI = {
+  createGoal: (goalData) => api.post('/goals', goalData),
+  getGoals: (params) => api.get('/goals', { params }),
+  getGoal: (id) => api.get(`/goals/${id}`),
+  updateGoal: (id, goalData) => api.put(`/goals/${id}`, goalData),
+  deleteGoal: (id) => api.delete(`/goals/${id}`),
+  updateProgress: (id, value) => api.put(`/goals/${id}/progress`, { currentValue: value }),
+};
 
-// Goal APIs
-export const getGoals = (params) => api.get('/goals', { params })
-export const getGoalStats = () => api.get('/goals/stats')
-export const createGoal = (goalData) => api.post('/goals', goalData)
-export const updateGoal = (id, goalData) => api.put(`/goals/${id}`, goalData)
-export const deleteGoal = (id) => api.delete(`/goals/${id}`)
+// Sessions API
+export const sessionsAPI = {
+  startSession: (sessionData) => api.post('/sessions', sessionData),
+  getSessions: (params) => api.get('/sessions', { params }),
+  getSession: (id) => api.get(`/sessions/${id}`),
+  endSession: (id, notes) => api.post(`/sessions/${id}/end`, { notes }),
+  deleteSession: (id) => api.delete(`/sessions/${id}`),
+};
 
-// Health check
-export const healthCheck = () => api.get('/health')
+// Stats API
+export const statsAPI = {
+  getDashboardStats: () => api.get('/stats/dashboard'),
+  getProductivityTrends: (params) => api.get('/stats/productivity', { params }),
+};
 
-// Default export
-export default {
-  register,
-  login,
-  getProfile,
-  updateProfile,
-  createSession,
-  getSessions,
-  getSessionStats,
-  getTasks,
-  getTaskStats,
-  createTask,
-  updateTask,
-  deleteTask,
-  getGoals,
-  getGoalStats,
-  createGoal,
-  updateGoal,
-  deleteGoal,
-  healthCheck,
-}
+// Export the base api instance
+export default api;
