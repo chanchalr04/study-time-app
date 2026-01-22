@@ -26,7 +26,7 @@ connectDB();
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'], // React/Vite dev servers
+  origin: ['http://localhost:3000', 'http://localhost:5173','https://study-time-app-zeta.vercel.app'], // React/Vite dev servers
   credentials: true
 }));
 app.use(express.json());
