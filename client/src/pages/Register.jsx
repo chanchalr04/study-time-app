@@ -136,7 +136,7 @@ const Register = () => {
                   value={formData.firstName}
                   onChange={handleChange}
                   className="input-field pl-10"
-                  placeholder="John"
+                  placeholder="Firstname"
                 />
               </div>
             </div>
@@ -153,7 +153,7 @@ const Register = () => {
                   value={formData.lastName}
                   onChange={handleChange}
                   className="input-field pl-10"
-                  placeholder="Doe"
+                  placeholder="Lastname"
                 />
               </div>
             </div>
@@ -171,7 +171,7 @@ const Register = () => {
                 value={formData.username}
                 onChange={handleChange}
                 className={`input-field pl-10 ${errors.username ? 'border-red-500' : ''}`}
-                placeholder="johndoe"
+                placeholder="Username"
                 required
               />
             </div>
@@ -192,7 +192,7 @@ const Register = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className={`input-field pl-10 ${errors.email ? 'border-red-500' : ''}`}
-                placeholder="you@example.com"
+                placeholder="Enter Email"
                 required
               />
             </div>
@@ -263,14 +263,6 @@ const Register = () => {
             </p>
           </div>
         </form>
-
-        {/* Debug Info - Remove in production */}
-        <div className="mt-6 p-4 bg-gray-100 rounded-lg text-xs">
-          <p className="font-medium mb-2">Debug Info:</p>
-          <pre className="whitespace-pre-wrap">
-            API URL: {import.meta.env.VITE_API_URL}
-          </pre>
-        </div>
       </div>
     </div>
   )
