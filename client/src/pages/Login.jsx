@@ -1,26 +1,43 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import { LogIn, Mail, Lock } from 'lucide-react'
+// src/pages/Login.js
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { LogIn, Mail, Lock } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Login = () => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
-  const navigate = useNavigate()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login, user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
+    }
+  }, [user, navigate, location]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    
-    const result = await login(email, password)
-    setLoading(false)
-    
+    e.preventDefault();
+    setLoading(true);
+
+    const result = await login(email, password);
+    setLoading(false);
+
     if (result.success) {
-      navigate('/')
+      toast.success('Login successful!');
+      
+      // Redirect to intended page or dashboard
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
+    } else {
+      toast.error(result.error || 'Login failed');
     }
-  }
+  };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
@@ -45,7 +62,7 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-field pl-10"
-                placeholder="Enter Valid Email"
+                placeholder="Enter your email"
                 required
               />
             </div>
@@ -62,7 +79,7 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-field pl-10"
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 required
               />
             </div>
@@ -87,7 +104,7 @@ const Login = () => {
         </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;

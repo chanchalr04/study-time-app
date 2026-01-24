@@ -1,10 +1,12 @@
+// src/App.js
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
-import PrivateRoute from './components/PrivateRoute'
+import ProtectedRoute from './components/ProtectedRoute'
+import PublicRoute from './components/PublicRoute'  // New PublicRoute
 import Navbar from './components/Navbar'
-import Footer from './components/Footer' // Import the Footer
+import Footer from './components/Footer'
 
 // Pages
 import Dashboard from './pages/Dashboard'
@@ -25,44 +27,61 @@ function App() {
           <Toaster position="top-right" />
           <main className="container mx-auto px-4 py-8 flex-grow">
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              {/* Public Routes - Only accessible when NOT logged in */}
+              <Route path="/login" element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              } />
               
+              <Route path="/register" element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              } />
+              
+              {/* Protected Routes - Only accessible when logged in */}
               <Route path="/" element={
-                <PrivateRoute>
+                <ProtectedRoute>
                   <Dashboard />
-                </PrivateRoute>
-              } />
-              <Route path="/timer" element={
-                <PrivateRoute>
-                  <Timer />
-                </PrivateRoute>
-              } />
-              <Route path="/tasks" element={
-                <PrivateRoute>
-                  <Tasks />
-                </PrivateRoute>
-              } />
-              <Route path="/goals" element={
-                <PrivateRoute>
-                  <Goals />
-                </PrivateRoute>
-              } />
-              <Route path="/analytics" element={
-                <PrivateRoute>
-                  <Analytics />
-                </PrivateRoute>
-              } />
-              <Route path="/profile" element={
-                <PrivateRoute>
-                  <Profile />
-                </PrivateRoute>
+                </ProtectedRoute>
               } />
               
+              <Route path="/timer" element={
+                <ProtectedRoute>
+                  <Timer />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/tasks" element={
+                <ProtectedRoute>
+                  <Tasks />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/goals" element={
+                <ProtectedRoute>
+                  <Goals />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/analytics" element={
+                <ProtectedRoute>
+                  <Analytics />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              
+              {/* 404 - Redirect to appropriate page based on auth */}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </main>
-          <Footer /> {/* Add Footer here */}
+          <Footer />
         </div>
       </Router>
     </AuthProvider>
