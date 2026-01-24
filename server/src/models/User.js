@@ -65,12 +65,16 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Hash password before saving
+// 🔥 FIXED HASHING (IMPORTANT)
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
-  
+
   try {
-    const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_SALT_ROUNDS));
+    const saltRounds = process.env.BCRYPT_SALT_ROUNDS
+      ? parseInt(process.env.BCRYPT_SALT_ROUNDS)
+      : 10;
+
+    const salt = await bcrypt.genSalt(saltRounds);
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
@@ -87,20 +91,20 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 userSchema.methods.updateStreak = function() {
   const today = new Date().toDateString();
   const lastActive = this.lastActiveDate ? this.lastActiveDate.toDateString() : null;
-  
+
   if (lastActive === today) {
     return this.studyStreak;
   }
-  
+
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  
+
   if (lastActive === yesterday.toDateString()) {
     this.studyStreak += 1;
   } else {
     this.studyStreak = 1;
   }
-  
+
   this.lastActiveDate = new Date();
   return this.studyStreak;
 };

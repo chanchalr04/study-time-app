@@ -33,8 +33,16 @@ app.use('/api/goals', require('./src/routes/goal.routes'));
 app.use('/api/sessions', require('./src/routes/session.routes'));
 app.use('/api/stats', require('./src/routes/stats.routes'));
 
+//Test
+app.get('/', (req, res) => {
+  res.send('API is running 🚀');
+});
+
+
 // Health check and other routes...
 app.get('/health', (req, res) => res.status(200).json({ status: 'OK' }));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log("Server started on port", PORT);
+});
