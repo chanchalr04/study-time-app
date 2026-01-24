@@ -14,7 +14,8 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:5173',
-    'https://study-time-app-zeta.vercel.app' // Your frontend
+    'http://localhost:5173',
+    'https://study-time-bqfxgl2yg-chanchalraikwar0424-2225s-projects.vercel.app' // frontend
   ],
   credentials: true
 }));

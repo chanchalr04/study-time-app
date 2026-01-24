@@ -2,12 +2,14 @@ import axios from 'axios';
 
 // Create axios instance
 const api = axios.create({
- baseURL: 'https://study-time-app-production.up.railway.app/api',
+  baseURL: 'https://study-time-app-production.up.railway.app/api',
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 seconds timeout
+  timeout: 10000,
+  withCredentials: false   // IMPORTANT
 });
+
 
 // Request interceptor to add token
 api.interceptors.request.use(
