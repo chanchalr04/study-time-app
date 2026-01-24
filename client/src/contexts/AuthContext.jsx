@@ -1,4 +1,9 @@
-import React, { createContext, useState, useContext, useEffect } from 'react'
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect
+} from 'react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 
@@ -7,87 +12,139 @@ export const useAuth = () => useContext(AuthContext)
 
 export const AuthProvider = ({ children }) => {
 
+  /* =========================
+     SAFE USER INITIALIZATION
+  ========================= */
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('user')
-    return storedUser ? JSON.parse(storedUser) : null
+    try {
+      const storedUser = localStorage.getItem('user')
+      if (!storedUser || storedUser === 'undefined') return null
+      return JSON.parse(storedUser)
+    } catch {
+      return null
+    }
   })
 
-  const [token, setToken] = useState(localStorage.getItem('token'))
+  const [token, setToken] = useState(() => {
+    const storedToken = localStorage.getItem('token')
+    return storedToken || null
+  })
+
   const [loading, setLoading] = useState(true)
   const [authLoading, setAuthLoading] = useState(false)
 
-  // ✅ LOAD USER ON APP START
+  /* =========================
+     LOAD USER ON APP START
+  ========================= */
   useEffect(() => {
     const loadUser = async () => {
       const storedToken = localStorage.getItem('token')
-      if (storedToken) {
-        try {
-          const response = await api.get('/auth/me')
-          setUser(response.data.user)
-          localStorage.setItem('user', JSON.stringify(response.data.user))
-        } catch (error) {
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-          setUser(null)
-          setToken(null)
-        }
+
+      if (!storedToken) {
+        setLoading(false)
+        return
       }
-      setLoading(false)
+
+      try {
+        const response = await api.get('/auth/me')
+
+        if (response?.data?.user) {
+          setUser(response.data.user)
+          localStorage.setItem(
+            'user',
+            JSON.stringify(response.data.user)
+          )
+        }
+      } catch (error) {
+        // Token invalid / expired
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        setUser(null)
+        setToken(null)
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadUser()
   }, [])
 
-  // ✅ LOGIN
+  /* =========================
+     LOGIN
+  ========================= */
   const login = async (email, password) => {
     setAuthLoading(true)
+
     try {
-      const response = await api.post('/auth/login', { email, password })
-      const { user, token } = response.data   // 🔥 FIX
+      const response = await api.post('/auth/login', {
+        email,
+        password
+      })
 
-      localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(user))
+      const { user, token } = response.data
 
-      setUser(user)
-      setToken(token)
+      if (token) {
+        localStorage.setItem('token', token)
+        setToken(token)
+      }
+
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user))
+        setUser(user)
+      }
 
       toast.success('Login successful')
       return { success: true }
 
     } catch (error) {
-      toast.error('Login failed')
+      toast.error(
+        error?.message || 'Login failed'
+      )
       return { success: false }
+
     } finally {
       setAuthLoading(false)
     }
   }
 
-  // ✅ REGISTER
+  /* =========================
+     REGISTER
+  ========================= */
   const register = async (data) => {
     setAuthLoading(true)
+
     try {
       const response = await api.post('/auth/register', data)
-      const { user, token } = response.data   // 🔥 FIX
+      const { user, token } = response.data
 
-      localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(user))
+      if (token) {
+        localStorage.setItem('token', token)
+        setToken(token)
+      }
 
-      setUser(user)
-      setToken(token)
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user))
+        setUser(user)
+      }
 
       toast.success('Registration successful')
       return { success: true }
 
     } catch (error) {
-      toast.error('Registration failed')
+      toast.error(
+        error?.message || 'Registration failed'
+      )
       return { success: false }
+
     } finally {
       setAuthLoading(false)
     }
   }
 
-  // ✅ LOGOUT
-  const logout = async () => {
+  /* =========================
+     LOGOUT
+  ========================= */
+  const logout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setUser(null)
