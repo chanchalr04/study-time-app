@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../middleware/auth');
+
 const validate = require('../middleware/validate');
+const { auth } = require('../middleware/auth');
+
 const {
   registerValidator,
   loginValidator
 } = require('../utils/validators');
+
 const {
   register,
   login,
@@ -13,18 +16,23 @@ const {
   logout
 } = require('../controllers/auth.controller');
 
-// Public routes
-router.post('/register', (req, res) => {
-  console.log("✅ /api/auth/register route was HIT!");
-  console.log("Request Body:", req.body);
-  res.status(200).json({ 
-    success: true, 
-    message: "Route is working. Middleware bypassed." 
-  });
-});
-router.post('/login', loginValidator, validate, login);
+// REGISTER
+router.post(
+  '/register',
+  registerValidator,
+  validate,
+  register
+);
 
-// Protected routes
+// LOGIN
+router.post(
+  '/login',
+  loginValidator,
+  validate,
+  login
+);
+
+// PROTECTED
 router.get('/me', auth, getMe);
 router.post('/logout', auth, logout);
 

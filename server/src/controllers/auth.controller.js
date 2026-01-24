@@ -1,40 +1,31 @@
 const User = require('../models/User');
 const { generateToken } = require('../config/jwt');
 
-/* =========================
-   REGISTER CONTROLLER
-========================= */
-const register = async (req, res) => {
+// REGISTER
+exports.register = async (req, res) => {
   try {
-    console.log('REGISTER BODY:', req.body);
-
     const { username, email, password, firstName, lastName } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({
       $or: [
-        { email: email.toLowerCase().trim() },
-        { username: username.trim() }
+        { email: email.toLowerCase() },
+        { username }
       ]
     });
 
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message:
-          existingUser.email === email.toLowerCase().trim()
-            ? 'Email already registered'
-            : 'Username already taken'
+        message: 'Email or username already exists'
       });
     }
 
-    // Create new user (password hashing via User model)
     const user = await User.create({
-      username: username.trim(),
-      email: email.toLowerCase().trim(),
+      username,
+      email: email.toLowerCase(),
       password,
-      firstName: firstName.trim(),
-      lastName: lastName.trim()
+      firstName,
+      lastName
     });
 
     const token = generateToken(user._id);
@@ -42,46 +33,25 @@ const register = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        createdAt: user.createdAt
-      }
+      token
     });
 
-  } catch (error) {
-    console.error('REGISTER ERROR:', error);
-
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
-      return res.status(409).json({
-        success: false,
-        message: `${field} already exists`
-      });
-    }
-
+  } catch (err) {
+    console.error(err);
     res.status(500).json({
       success: false,
-      message: 'Registration failed'
+      message: 'Register failed'
     });
   }
 };
 
-/* =========================
-   LOGIN CONTROLLER
-========================= */
-const login = async (req, res) => {
+// LOGIN
+exports.login = async (req, res) => {
   try {
-    console.log('LOGIN BODY:', req.body);
-
     const { email, password } = req.body;
 
     const user = await User.findOne({
-      email: email.toLowerCase().trim()
+      email: email.toLowerCase()
     }).select('+password');
 
     if (!user) {
@@ -100,28 +70,16 @@ const login = async (req, res) => {
       });
     }
 
-    user.lastLogin = new Date();
-    await user.save();
-
     const token = generateToken(user._id);
 
     res.status(200).json({
       success: true,
       message: 'Login successful',
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        lastLogin: user.lastLogin
-      }
+      token
     });
 
-  } catch (error) {
-    console.error('LOGIN ERROR:', error);
-
+  } catch (err) {
+    console.error(err);
     res.status(500).json({
       success: false,
       message: 'Login failed'
@@ -129,54 +87,13 @@ const login = async (req, res) => {
   }
 };
 
-/* =========================
-   GET CURRENT USER
-========================= */
-const getMe = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        createdAt: user.createdAt
-      }
-    });
-
-  } catch (error) {
-    console.error('GET ME ERROR:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch user'
-    });
-  }
+// GET ME
+exports.getMe = async (req, res) => {
+  const user = await User.findById(req.user.id);
+  res.json(user);
 };
 
-/* =========================
-   LOGOUT
-========================= */
-const logout = async (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Logged out successfully'
-  });
-};
-
-module.exports = {
-  register,
-  login,
-  getMe,
-  logout
+// LOGOUT
+exports.logout = async (req, res) => {
+  res.json({ success: true });
 };
